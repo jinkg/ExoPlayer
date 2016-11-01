@@ -19,6 +19,8 @@ public final class C {
 
     public static final long TIME_UNSET = Long.MIN_VALUE + 1;
 
+    public static final long TIME_END_OF_SOURCE = Long.MIN_VALUE;
+
     public static final int INDEX_UNSET = -1;
 
     public static final int TRACK_TYPE_DEFAULT = 0;

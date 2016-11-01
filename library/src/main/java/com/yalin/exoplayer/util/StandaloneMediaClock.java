@@ -10,4 +10,17 @@ public final class StandaloneMediaClock implements MediaClock {
     public long getPositionUs() {
         return 0;
     }
+
+
+    public void start() {
+
+    }
+
+    public void stop() {
+
+    }
+
+    public void setPositionUs(long timeUs){
+
+    }
 }
