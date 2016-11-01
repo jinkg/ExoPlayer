@@ -57,7 +57,7 @@ public abstract class BaseRenderer implements Renderer, RendererCapabilities {
                        boolean joining, long offsetUs) throws ExoPlaybackException {
         Assertions.checkState(state == STATE_DISABLED);
         state = STATE_ENABLED;
-        onEnable(joining);
+        onEnabled(joining);
         replaceStream(formats, stream, offsetUs);
         onPositionReset(positionUs, joining);
     }
@@ -65,7 +65,7 @@ public abstract class BaseRenderer implements Renderer, RendererCapabilities {
     @Override
     public void start() throws ExoPlaybackException {
         Assertions.checkState(state == STATE_ENABLED);
-        state = STATE_STATED;
+        state = STATE_STARTED;
         onStarted();
     }
 
@@ -107,7 +107,7 @@ public abstract class BaseRenderer implements Renderer, RendererCapabilities {
 
     @Override
     public void stop() throws ExoPlaybackException {
-        Assertions.checkState(state == STATE_STATED);
+        Assertions.checkState(state == STATE_STARTED);
         state = STATE_ENABLED;
         onStopped();
     }
@@ -131,7 +131,7 @@ public abstract class BaseRenderer implements Renderer, RendererCapabilities {
 
     }
 
-    protected void onEnable(boolean joining) throws ExoPlaybackException {
+    protected void onEnabled(boolean joining) throws ExoPlaybackException {
 
     }
 

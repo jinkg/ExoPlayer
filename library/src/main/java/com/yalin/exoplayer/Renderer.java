@@ -15,7 +15,7 @@ public interface Renderer extends ExoPlayer.ExoPlayerComponent {
 
     int STATE_ENABLED = 1;
 
-    int STATE_STATED = 2;
+    int STATE_STARTED = 2;
 
     int getTrackType();
 

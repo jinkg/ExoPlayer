@@ -1,12 +1,15 @@
 package com.yalin.exoplayer;
 
 
+import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.media.MediaFormat;
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.yalin.exoplayer.drm.DrmInitData;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -105,6 +108,51 @@ public final class Format implements Parcelable {
         this.drmInitData = drmInitData;
     }
 
+    @SuppressLint("InlinedApi")
+    @TargetApi(16)
+    public final MediaFormat getFrameworkMediaFormatV16() {
+        if (frameworkMediaFormat == null) {
+            MediaFormat format = new MediaFormat();
+            format.setString(MediaFormat.KEY_MIME, sampleMimeType);
+            maybeSetStringV16(format, MediaFormat.KEY_LANGUAGE, language);
+            maybeSetIntegerV16(format, MediaFormat.KEY_MAX_INPUT_SIZE, maxInputSize);
+            maybeSetIntegerV16(format, MediaFormat.KEY_WIDTH, width);
+            maybeSetIntegerV16(format, MediaFormat.KEY_HEIGHT, height);
+            maybeSetFloatV16(format, MediaFormat.KEY_FRAME_RATE, frameRate);
+            maybeSetIntegerV16(format, "rotation-degrees", rotationDegrees);
+            maybeSetIntegerV16(format, MediaFormat.KEY_CHANNEL_COUNT, channelCount);
+            maybeSetIntegerV16(format, MediaFormat.KEY_SAMPLE_RATE, sampleRate);
+            maybeSetIntegerV16(format, "encoder-delay", encoderDelay);
+            maybeSetIntegerV16(format, "encoder-padding", encoderPadding);
+            for (int i = 0; i < initializationData.size(); i++) {
+                format.setByteBuffer("csd-" + i, ByteBuffer.wrap(initializationData.get(i)));
+            }
+            frameworkMediaFormat = format;
+        }
+        return frameworkMediaFormat;
+    }
+
+    @TargetApi(16)
+    private static void maybeSetStringV16(MediaFormat format, String key, String value) {
+        if (value != null) {
+            format.setString(key, value);
+        }
+    }
+
+    @TargetApi(16)
+    private static void maybeSetIntegerV16(MediaFormat format, String key, int value) {
+        if (value != NO_VALUE) {
+            format.setInteger(key, value);
+        }
+    }
+
+    @TargetApi(16)
+    private static void maybeSetFloatV16(MediaFormat format, String key, float value) {
+        if (value != NO_VALUE) {
+            format.setFloat(key, value);
+        }
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -186,4 +234,6 @@ public final class Format implements Parcelable {
             return new Format[size];
         }
     };
+
+
 }

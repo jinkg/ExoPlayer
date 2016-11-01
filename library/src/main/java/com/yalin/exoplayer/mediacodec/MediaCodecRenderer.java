@@ -253,7 +253,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
             throwDecoderInitError(new DecoderInitializationException(format, e,
                     drmSessionRequiresSecureDecoder, codecName));
         }
-        codecHotswapDeadlineMs = getState() == STATE_STATED
+        codecHotswapDeadlineMs = getState() == STATE_STARTED
                 ? (SystemClock.elapsedRealtime() + MAX_CODEC_HOTSWAP_TIME_MS) : C.TIME_UNSET;
         inputIndex = C.INDEX_UNSET;
         outputIndex = C.INDEX_UNSET;
@@ -270,7 +270,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
     }
 
     @Override
-    protected void onEnable(boolean joining) throws ExoPlaybackException {
+    protected void onEnabled(boolean joining) throws ExoPlaybackException {
         decoderCounters = new DecoderCounters();
     }
 
