@@ -47,10 +47,6 @@ public final class C {
 
     public static final int RESULT_FORMAT_READ = -5;
 
-    public static long usToMs(long timeUs) {
-        return timeUs == TIME_UNSET ? TIME_UNSET : (timeUs / 1000);
-    }
-
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({Format.NO_VALUE, STEREO_MODE_MONO, STEREO_MODE_TOP_BOTTOM, STEREO_MODE_LEFT_RIGHT})
     public @interface StereoMode {
@@ -117,4 +113,12 @@ public final class C {
 
     @SuppressLint("InlinedApi")
     public static final int CRYPTO_MODE_AEC_CBC = MediaCodec.CRYPTO_MODE_AES_CBC;
+
+    public static long usToMs(long timeUs) {
+        return timeUs == TIME_UNSET ? TIME_UNSET : (timeUs / 1000);
+    }
+
+    public static long msToUs(long timeMs) {
+        return timeMs == TIME_UNSET ? TIME_UNSET : (timeMs * 1000);
+    }
 }

@@ -3,6 +3,7 @@ package com.yalin.exoplayer;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
+import android.media.MediaCodec;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Surface;
@@ -10,13 +11,16 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 
+import com.yalin.exoplayer.decoder.DecoderCounters;
 import com.yalin.exoplayer.drm.DrmSessionManager;
 import com.yalin.exoplayer.drm.FrameworkMediaCrypto;
+import com.yalin.exoplayer.mediacodec.MediaCodecSelector;
 import com.yalin.exoplayer.source.MediaSource;
 import com.yalin.exoplayer.text.TextRenderer;
 import com.yalin.exoplayer.trackslection.TrackSelections;
 import com.yalin.exoplayer.trackslection.TrackSelector;
 import com.yalin.exoplayer.video.MediaCodecVideoRenderer;
+import com.yalin.exoplayer.video.VideoRendererEventListener;
 
 import java.util.ArrayList;
 
@@ -37,6 +41,7 @@ public final class SimpleExoPlayer implements ExoPlayer {
     }
 
     private static final String TAG = "SimpleExoPlayer";
+    private static final int MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY = 50;
 
     private final ExoPlayer player;
     private final Renderer[] renderers;
@@ -47,7 +52,6 @@ public final class SimpleExoPlayer implements ExoPlayer {
 
     private boolean videoTrackEnabled;
     private Format videoFormat;
-    private Format audioFormat;
 
     private Surface surface;
     private boolean ownsSurface;
@@ -55,6 +59,7 @@ public final class SimpleExoPlayer implements ExoPlayer {
     private TextureView textureView;
     private TextRenderer.Output textOutput;
     private VideoListener videoListener;
+    private DecoderCounters videoDecoderCounters;
     private float volume;
 
     public SimpleExoPlayer(Context context, TrackSelector<?> trackSelector,
@@ -159,8 +164,8 @@ public final class SimpleExoPlayer implements ExoPlayer {
         return videoFormat;
     }
 
-    public Format getAudioFormat() {
-        return audioFormat;
+    public DecoderCounters getVideoDecoderCounters() {
+        return videoDecoderCounters;
     }
 
     public void setVideoListener(VideoListener listener) {
@@ -305,7 +310,10 @@ public final class SimpleExoPlayer implements ExoPlayer {
     private void buildRenderers(Context context,
                                 DrmSessionManager<FrameworkMediaCrypto> drmSessionManager,
                                 ArrayList<Renderer> renderersList, long allowedVideoJoiningTimeMs) {
-        MediaCodecVideoRenderer videoRenderer = new MediaCodecVideoRenderer();
+        MediaCodecVideoRenderer videoRenderer = new MediaCodecVideoRenderer(context,
+                MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT,
+                allowedVideoJoiningTimeMs, drmSessionManager, false, mainHandler, componentListener,
+                MAX_DROPPED_VIDEO_FRAME_COUNT_TO_NOTIFY);
         renderersList.add(videoRenderer);
     }
 
@@ -345,7 +353,7 @@ public final class SimpleExoPlayer implements ExoPlayer {
     }
 
     private final class ComponentListener implements TrackSelector.EventListener<Object>,
-            SurfaceHolder.Callback, TextureView.SurfaceTextureListener {
+            SurfaceHolder.Callback, TextureView.SurfaceTextureListener, VideoRendererEventListener {
 
         @Override
         public void onTrackSelectionsChanged(TrackSelections<?> trackSelections) {
@@ -396,6 +404,48 @@ public final class SimpleExoPlayer implements ExoPlayer {
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
+        }
+
+        @Override
+        public void onVideoEnabled(DecoderCounters counters) {
+            videoDecoderCounters = counters;
+        }
+
+        @Override
+        public void onVideoDecoderInitialized(String decoderName, long initializedTimestampMs, long initializationDurationMs) {
+
+        }
+
+        @Override
+        public void onVideoInputFormatChanged(Format format) {
+            videoFormat = format;
+        }
+
+        @Override
+        public void onDroppedFrames(int count, long elapsedMs) {
+
+        }
+
+        @Override
+        public void onVideoSizeChanged(int width, int height, int unappliedRotationDegrees,
+                                       float pixelWidthHeightRatio) {
+            if (videoListener != null) {
+                videoListener.onVideoSizeChanged(width, height, unappliedRotationDegrees,
+                        pixelWidthHeightRatio);
+            }
+        }
+
+        @Override
+        public void onRenderedFirstFrame(Surface surface) {
+            if (videoListener != null && SimpleExoPlayer.this.surface == surface) {
+                videoListener.onRenderedFirstFrame();
+            }
+        }
+
+        @Override
+        public void onVideoDisabled(DecoderCounters counters) {
+            videoFormat = null;
+            videoDecoderCounters = null;
         }
     }
 

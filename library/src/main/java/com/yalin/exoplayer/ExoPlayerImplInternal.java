@@ -11,6 +11,7 @@ import com.yalin.exoplayer.ExoPlayer.ExoPlayerMessage;
 import com.yalin.exoplayer.source.MediaPeriod;
 import com.yalin.exoplayer.source.MediaSource;
 import com.yalin.exoplayer.trackslection.TrackSelector;
+import com.yalin.exoplayer.util.MediaClock;
 import com.yalin.exoplayer.util.PriorityHandlerThread;
 import com.yalin.exoplayer.util.StandaloneMediaClock;
 
@@ -21,7 +22,7 @@ import java.io.IOException;
  * 日期：2016/10/31.
  */
 
-final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.InvalidationListener {
+final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.InvalidationListener, MediaSource.Listener {
 
     public static final class PlaybackInfo {
         public final int periodIndex;
@@ -74,8 +75,11 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
 
     private PlaybackInfo playbackInfo;
     private Renderer[] enabledRenderers;
+    private MediaClock rendererMediaClock;
+    private MediaSource mediaSource;
     private boolean released;
     private boolean playWhenReady;
+    private boolean isLoading;
     private int state;
     private int customMessagesSent;
     private int customMessagesProcessed;
@@ -113,7 +117,7 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
                 .sendToTarget();
     }
 
-    public void setMsgSetPlayWhenReady(boolean playWhenReady) {
+    public void setPlayWhenReady(boolean playWhenReady) {
         handler.obtainMessage(MSG_SET_PLAY_WHEN_READY, playWhenReady ? 1 : 0, 0)
                 .sendToTarget();
     }
@@ -234,9 +238,31 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
         }
     }
 
+    private void setState(int state) {
+        if (this.state != state) {
+            this.state = state;
+            eventHandler.obtainMessage(MSG_STATE_CHANGED, state, 0).sendToTarget();
+        }
+    }
+
+    private void setIsLoading(boolean isLoading) {
+        if (this.isLoading != isLoading) {
+            this.isLoading = isLoading;
+            eventHandler.obtainMessage(MSG_LOADING_CHANGED, isLoading ? 1 : 0, 0).sendToTarget();
+        }
+    }
+
     private void prepareInternal(MediaSource mediaSource, boolean resetPosition)
             throws ExoPlaybackException {
-
+        resetInternal();
+        loadControl.onPrepared();
+        if (resetPosition) {
+            playbackInfo = new PlaybackInfo(0, C.TIME_UNSET);
+        }
+        this.mediaSource = mediaSource;
+        mediaSource.prepareSource(this);
+        setState(ExoPlayer.STATE_BUFFERING);
+        handler.sendEmptyMessage(MSG_DO_SOME_WORK);
     }
 
     private void setPlayWhenReadyInternal(boolean playWhenReady) throws ExoPlaybackException {
@@ -292,8 +318,17 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
 
     }
 
+    private void resetInternal() {
+
+    }
+
     @Override
     public void onTrackSelectionsInvalidated() {
+
+    }
+
+    @Override
+    public void onSourceInfoRefreshed(Timeline timeline, Object manifest) {
 
     }
 }
