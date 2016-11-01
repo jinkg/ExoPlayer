@@ -11,6 +11,10 @@ import java.io.IOException;
  */
 
 public abstract class BaseRenderer implements Renderer, RendererCapabilities {
+    public BaseRenderer(int trackType) {
+
+    }
+
     @Override
     public int getTrackType() {
         return 0;

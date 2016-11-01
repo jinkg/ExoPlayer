@@ -1,9 +1,13 @@
 package com.yalin.exoplayer.mediacodec;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.media.MediaCodecInfo.CodecCapabilities;
+import android.media.MediaCodecInfo.CodecProfileLevel;
 import android.media.MediaCodecList;
 import android.util.Log;
+import android.util.Pair;
+import android.util.SparseIntArray;
 
 import com.yalin.exoplayer.util.MimeTypes;
 import com.yalin.exoplayer.util.Util;
@@ -12,12 +16,16 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 作者：YaLin
  * 日期：2016/10/31.
  */
 @TargetApi(16)
+@SuppressLint("InlinedApi")
 public final class MediaCodecUtil {
     public static class DecoderQueryException extends Exception {
         private DecoderQueryException(Throwable cause) {
@@ -28,13 +36,32 @@ public final class MediaCodecUtil {
     private static final String TAG = "MediaCodecUtil";
     private static final MediaCodecInfo PASSTHROUGH_DECODER_INFO =
             MediaCodecInfo.newPassthroughInstance("OMX.google.raw.decoder");
+    private static final Pattern PROFILE_PATTERN = Pattern.compile("^\\D?(\\d+)$");
+
+    private static final SparseIntArray AVC_PROFILE_NUMBER_TO_CONST;
+    private static final SparseIntArray AVC_LEVEL_NUMBER_TO_CONST;
+    private static final String CODEC_ID_AVC1 = "avc1";
+    private static final String CODEC_ID_AVC2 = "avc2";
+
+    private static final Map<String, Integer> HEVC_CODEC_STRING_TO_PROFILE_LEVEL;
+    private static final String CODEC_ID_HEV1 = "hev1";
+    private static final String CODEC_ID_HVC1 = "hvc1";
+
+    private static int maxH264DecodeableFrameSize = -1;
 
     private static final HashMap<CodecKey, List<MediaCodecInfo>> decoderInfosCache = new HashMap<>();
+
+    private MediaCodecUtil() {
+    }
 
     public static MediaCodecInfo getDecoderInfo(String mimeType, boolean secure)
             throws DecoderQueryException {
         List<MediaCodecInfo> decoderInfos = getDecoderInfos(mimeType, secure);
         return decoderInfos.isEmpty() ? null : decoderInfos.get(0);
+    }
+
+    public static MediaCodecInfo getPassthroughDecoderInfo() {
+        return PASSTHROUGH_DECODER_INFO;
     }
 
     public static synchronized List<MediaCodecInfo> getDecoderInfos(String mimeType,
@@ -58,6 +85,38 @@ public final class MediaCodecUtil {
         decoderInfos = Collections.unmodifiableList(decoderInfos);
         decoderInfosCache.put(key, decoderInfos);
         return decoderInfos;
+    }
+
+    public static Pair<Integer, Integer> getCodecProfileAndLevel(String codec) {
+        if (codec == null) {
+            return null;
+        }
+        String[] parts = codec.split("\\.");
+        switch (parts[0]) {
+            case CODEC_ID_HEV1:
+            case CODEC_ID_HVC1:
+                return getHevcProfileAndLevel(codec, parts);
+            case CODEC_ID_AVC1:
+            case CODEC_ID_AVC2:
+                return getAvcProfileAndLevel(codec, parts);
+            default:
+                return null;
+        }
+    }
+
+    public static int maxH264DecodableFrameSize() throws DecoderQueryException {
+        if (maxH264DecodeableFrameSize == -1) {
+            int result = 0;
+            MediaCodecInfo decoderInfo = getDecoderInfo(MimeTypes.VIDEO_H264, false);
+            if (decoderInfo != null) {
+                for (CodecProfileLevel profileLevel : decoderInfo.getprofileLevels()) {
+                    result = Math.max(avcLevelToMaxFrameSize(profileLevel.level), result);
+                }
+                result = Math.max(result, 480 * 360);
+            }
+            maxH264DecodeableFrameSize = result;
+        }
+        return maxH264DecodeableFrameSize;
     }
 
     private static List<MediaCodecInfo> getDecoderInfosInternal(
@@ -168,8 +227,105 @@ public final class MediaCodecUtil {
         return true;
     }
 
-    public static MediaCodecInfo getPassthroughDecoderInfo() {
-        return PASSTHROUGH_DECODER_INFO;
+    private static Pair<Integer, Integer> getHevcProfileAndLevel(String codec, String[] parts) {
+        if (parts.length < 4) {
+            Log.w(TAG, "Ignoring malformed HEVC codec string: " + codec);
+            return null;
+        }
+        Matcher matcher = PROFILE_PATTERN.matcher(parts[1]);
+        if (!matcher.matches()) {
+            Log.w(TAG, "Ignoring malformed HEVC codec string: " + codec);
+            return null;
+        }
+        String profileString = matcher.group(1);
+        int profile;
+        if ("1".equals(profileString)) {
+            profile = CodecProfileLevel.HEVCProfileMain;
+        } else if ("2".equals(profileString)) {
+            profile = CodecProfileLevel.HEVCProfileMain10;
+        } else {
+            Log.w(TAG, "Unknown HEVC profile string: " + profileString);
+            return null;
+        }
+        Integer level = HEVC_CODEC_STRING_TO_PROFILE_LEVEL.get(parts[3]);
+        if (level == null) {
+            Log.w(TAG, "Unkown HEVC level string: " + matcher.group(1));
+            return null;
+        }
+        return new Pair<>(profile, level);
+    }
+
+    private static Pair<Integer, Integer> getAvcProfileAndLevel(String codec, String[] codecsParts) {
+        if (codec.length() < 2) {
+            Log.w(TAG, "Ignoring malformed AVC codec string: " + codec);
+            return null;
+        }
+        Integer profileInteger;
+        Integer levelInteger;
+        try {
+            if (codecsParts[1].length() == 6) {
+                profileInteger = Integer.parseInt(codecsParts[1].substring(0, 2), 16);
+                levelInteger = Integer.parseInt(codecsParts[1].substring(4), 16);
+            } else if (codecsParts.length >= 3) {
+                profileInteger = Integer.parseInt(codecsParts[1]);
+                levelInteger = Integer.parseInt(codecsParts[2]);
+            } else {
+                Log.w(TAG, "Ignoring malformed AVC codec string: " + codec);
+                return null;
+            }
+        } catch (NumberFormatException e) {
+            Log.w(TAG, "Ignoring malformed AVC codec string: " + codec);
+            return null;
+        }
+
+        Integer profile = AVC_PROFILE_NUMBER_TO_CONST.get(profileInteger);
+        if (profile == 0) {
+            Log.w(TAG, "Unknown AVC profile: " + profileInteger);
+            return null;
+        }
+        Integer level = AVC_LEVEL_NUMBER_TO_CONST.get(levelInteger);
+        if (level == 0) {
+            Log.w(TAG, "Unknown AVC level: " + level);
+            return null;
+        }
+        return new Pair<>(profile, level);
+    }
+
+    private static int avcLevelToMaxFrameSize(int avcLevel) {
+        switch (avcLevel) {
+            case CodecProfileLevel.AVCLevel1:
+                return 99 * 16 * 16;
+            case CodecProfileLevel.AVCLevel1b:
+                return 99 * 16 * 16;
+            case CodecProfileLevel.AVCLevel12:
+                return 396 * 16 * 16;
+            case CodecProfileLevel.AVCLevel13:
+                return 396 * 16 * 16;
+            case CodecProfileLevel.AVCLevel2:
+                return 396 * 16 * 16;
+            case CodecProfileLevel.AVCLevel21:
+                return 792 * 16 * 16;
+            case CodecProfileLevel.AVCLevel22:
+                return 1620 * 16 * 16;
+            case CodecProfileLevel.AVCLevel3:
+                return 1620 * 16 * 16;
+            case CodecProfileLevel.AVCLevel31:
+                return 3600 * 16 * 16;
+            case CodecProfileLevel.AVCLevel32:
+                return 5120 * 16 * 16;
+            case CodecProfileLevel.AVCLevel4:
+                return 8192 * 16 * 16;
+            case CodecProfileLevel.AVCLevel41:
+                return 8192 * 16 * 16;
+            case CodecProfileLevel.AVCLevel42:
+                return 8704 * 16 * 16;
+            case CodecProfileLevel.AVCLevel5:
+                return 22080 * 16 * 16;
+            case CodecProfileLevel.AVCLevel51:
+                return 36864 * 16 * 16;
+            default:
+                return -1;
+        }
     }
 
     private interface MediaCodecListCompat {
@@ -254,5 +410,61 @@ public final class MediaCodecUtil {
             this.mimeType = mimeType;
             this.secure = secure;
         }
+    }
+
+    static {
+        AVC_PROFILE_NUMBER_TO_CONST = new SparseIntArray();
+        AVC_PROFILE_NUMBER_TO_CONST.put(66, CodecProfileLevel.AVCProfileBaseline);
+        AVC_PROFILE_NUMBER_TO_CONST.put(77, CodecProfileLevel.AVCProfileMain);
+        AVC_PROFILE_NUMBER_TO_CONST.put(88, CodecProfileLevel.AVCProfileExtended);
+        AVC_PROFILE_NUMBER_TO_CONST.put(100, CodecProfileLevel.AVCProfileHigh);
+
+        AVC_LEVEL_NUMBER_TO_CONST = new SparseIntArray();
+        AVC_LEVEL_NUMBER_TO_CONST.put(10, CodecProfileLevel.AVCLevel1);
+
+        AVC_LEVEL_NUMBER_TO_CONST.put(11, CodecProfileLevel.AVCLevel11);
+        AVC_LEVEL_NUMBER_TO_CONST.put(12, CodecProfileLevel.AVCLevel12);
+        AVC_LEVEL_NUMBER_TO_CONST.put(13, CodecProfileLevel.AVCLevel13);
+        AVC_LEVEL_NUMBER_TO_CONST.put(20, CodecProfileLevel.AVCLevel2);
+        AVC_LEVEL_NUMBER_TO_CONST.put(21, CodecProfileLevel.AVCLevel21);
+        AVC_LEVEL_NUMBER_TO_CONST.put(22, CodecProfileLevel.AVCLevel22);
+        AVC_LEVEL_NUMBER_TO_CONST.put(30, CodecProfileLevel.AVCLevel3);
+        AVC_LEVEL_NUMBER_TO_CONST.put(31, CodecProfileLevel.AVCLevel31);
+        AVC_LEVEL_NUMBER_TO_CONST.put(32, CodecProfileLevel.AVCLevel32);
+        AVC_LEVEL_NUMBER_TO_CONST.put(40, CodecProfileLevel.AVCLevel4);
+        AVC_LEVEL_NUMBER_TO_CONST.put(41, CodecProfileLevel.AVCLevel41);
+        AVC_LEVEL_NUMBER_TO_CONST.put(42, CodecProfileLevel.AVCLevel42);
+        AVC_LEVEL_NUMBER_TO_CONST.put(50, CodecProfileLevel.AVCLevel5);
+        AVC_LEVEL_NUMBER_TO_CONST.put(51, CodecProfileLevel.AVCLevel51);
+        AVC_LEVEL_NUMBER_TO_CONST.put(52, CodecProfileLevel.AVCLevel52);
+
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL = new HashMap<>();
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L30", CodecProfileLevel.HEVCMainTierLevel1);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L60", CodecProfileLevel.HEVCMainTierLevel2);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L63", CodecProfileLevel.HEVCMainTierLevel21);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L90", CodecProfileLevel.HEVCMainTierLevel3);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L93", CodecProfileLevel.HEVCMainTierLevel31);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L120", CodecProfileLevel.HEVCMainTierLevel4);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L123", CodecProfileLevel.HEVCMainTierLevel41);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L150", CodecProfileLevel.HEVCMainTierLevel5);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L153", CodecProfileLevel.HEVCMainTierLevel51);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L156", CodecProfileLevel.HEVCMainTierLevel52);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L180", CodecProfileLevel.HEVCMainTierLevel6);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L183", CodecProfileLevel.HEVCMainTierLevel61);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("L186", CodecProfileLevel.HEVCMainTierLevel62);
+
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H30", CodecProfileLevel.HEVCHighTierLevel1);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H60", CodecProfileLevel.HEVCHighTierLevel2);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H63", CodecProfileLevel.HEVCHighTierLevel21);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H90", CodecProfileLevel.HEVCHighTierLevel3);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H93", CodecProfileLevel.HEVCHighTierLevel31);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H120", CodecProfileLevel.HEVCHighTierLevel4);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H123", CodecProfileLevel.HEVCHighTierLevel41);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H150", CodecProfileLevel.HEVCHighTierLevel5);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H153", CodecProfileLevel.HEVCHighTierLevel51);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H156", CodecProfileLevel.HEVCHighTierLevel52);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H180", CodecProfileLevel.HEVCHighTierLevel6);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H183", CodecProfileLevel.HEVCHighTierLevel61);
+        HEVC_CODEC_STRING_TO_PROFILE_LEVEL.put("H186", CodecProfileLevel.HEVCHighTierLevel62);
     }
 }
