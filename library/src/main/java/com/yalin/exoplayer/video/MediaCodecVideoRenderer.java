@@ -1,6 +1,8 @@
 package com.yalin.exoplayer.video;
 
 import android.content.Context;
+import android.media.MediaCodec;
+import android.media.MediaCrypto;
 import android.os.Handler;
 import android.view.Surface;
 
@@ -18,6 +20,8 @@ import com.yalin.exoplayer.mediacodec.MediaCodecUtil.DecoderQueryException;
 import com.yalin.exoplayer.util.MimeTypes;
 import com.yalin.exoplayer.util.Util;
 import com.yalin.exoplayer.video.VideoRendererEventListener.EventDispatcher;
+
+import java.nio.ByteBuffer;
 
 /**
  * 作者：YaLin
@@ -79,6 +83,11 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
     }
 
     @Override
+    protected boolean processOutputBuffer(long positionUs, long elapsedRealtimeUs, MediaCodec codec, ByteBuffer buffer, int bufferIndex, int bufferFlags, long bufferPresentationTimeUs, boolean shouldSkip) throws ExoPlaybackException {
+        return false;
+    }
+
+    @Override
     public boolean isReady() {
         return false;
     }
@@ -134,5 +143,10 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
         int adaptiveSupport = decoderInfo.adaptive ? ADAPTIVE_SEAMLESS : ADAPTIVE_NOT_SEAMLESS;
         int formatSupport = decoderCapable ? FORMAT_HANDLED : FORMAT_EXCEEDS_CAPABILITIES;
         return adaptiveSupport | formatSupport;
+    }
+
+    @Override
+    protected void configureCodec(MediaCodec codec, Format format, MediaCrypto crypto) {
+
     }
 }

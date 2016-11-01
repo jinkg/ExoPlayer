@@ -16,6 +16,10 @@ public final class FrameworkMediaCrypto implements ExoMediaCrypto {
         this.mediaCrypto = mediaCrypto;
     }
 
+    public MediaCrypto getWrappedMediaCrypto() {
+        return mediaCrypto;
+    }
+
     @Override
     public boolean requiresSecureDecoderComponent(String mimeType) {
         return mediaCrypto.requiresSecureDecoderComponent(mimeType);

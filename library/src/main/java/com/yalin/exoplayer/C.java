@@ -1,6 +1,8 @@
 package com.yalin.exoplayer;
 
+import android.annotation.SuppressLint;
 import android.media.AudioFormat;
+import android.media.MediaCodec;
 import android.support.annotation.IntDef;
 
 import java.lang.annotation.Retention;
@@ -34,6 +36,16 @@ public final class C {
     public static final int MSG_SET_VOLUME = 2;
 
     public static final int MSG_SET_PLAYBACK_PARAMS = 3;
+
+    public static final int RESULT_END_OF_INPUT = -1;
+
+    public static final int RESULT_MAX_LENGTH_EXCEEDED = -2;
+
+    public static final int RESULT_NOTING_READ = -3;
+
+    public static final int RESULT_BUFFER_READ = -4;
+
+    public static final int RESULT_FORMAT_READ = -5;
 
     public static long usToMs(long timeUs) {
         return timeUs == TIME_UNSET ? TIME_UNSET : (timeUs / 1000);
@@ -75,4 +87,34 @@ public final class C {
     public static final int SELCTION_FLAG_FORCED = 2;
 
     public static final int SELCTION_FLAG_AUTOSELECT = 4;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef(flag = true, value = {BUFFER_FLAG_KEY_FRAME, BUFFER_FLAG_END_OF_STREAM,
+            BUFFER_FLAG_ENCRYPTED, BUFFER_FLAG_DECODE_ONLY})
+    public @interface BufferFlags {
+    }
+
+    @SuppressLint("InlinedApi")
+    public static final int BUFFER_FLAG_KEY_FRAME = MediaCodec.BUFFER_FLAG_KEY_FRAME;
+
+    @SuppressLint("InlinedApi")
+    public static final int BUFFER_FLAG_END_OF_STREAM = MediaCodec.BUFFER_FLAG_END_OF_STREAM;
+
+    public static final int BUFFER_FLAG_ENCRYPTED = 0x40000000;
+
+    public static final int BUFFER_FLAG_DECODE_ONLY = 0x80000000;
+
+    @Retention(RetentionPolicy.SOURCE)
+    @IntDef({CRYPTO_MODE_UNENCRYPTED, CRYPTO_MODE_AEC_CTR, CRYPTO_MODE_AEC_CBC})
+    public @interface CryptoMode {
+    }
+
+    @SuppressLint("InlinedApi")
+    public static final int CRYPTO_MODE_UNENCRYPTED = MediaCodec.CRYPTO_MODE_UNENCRYPTED;
+
+    @SuppressLint("InlinedApi")
+    public static final int CRYPTO_MODE_AEC_CTR = MediaCodec.CRYPTO_MODE_AES_CTR;
+
+    @SuppressLint("InlinedApi")
+    public static final int CRYPTO_MODE_AEC_CBC = MediaCodec.CRYPTO_MODE_AES_CBC;
 }

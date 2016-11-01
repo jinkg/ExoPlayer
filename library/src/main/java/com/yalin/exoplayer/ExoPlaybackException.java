@@ -16,4 +16,8 @@ public final class ExoPlaybackException extends Exception {
     public static ExoPlaybackException createForUnexpected(RuntimeException cause) {
         return new ExoPlaybackException();
     }
+
+    public static ExoPlaybackException createForRenderer(Exception cause,int rendererIndex){
+        return new ExoPlaybackException();
+    }
 }

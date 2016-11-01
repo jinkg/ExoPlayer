@@ -21,6 +21,8 @@ public class Util {
 
     public static final String MANUFACTURER = Build.MANUFACTURER;
 
+    public static final String MODEL = Build.MODEL;
+
     public static boolean maybeRequestReadExternalStoragePermission(Activity activity, Uri... uris) {
         if (SDK_INT < 23) {
             return false;
@@ -37,8 +39,22 @@ public class Util {
         return false;
     }
 
+    public static boolean areEqual(Object o1, Object o2) {
+        return o1 == null ? o2 == null : o1.equals(o2);
+    }
+
     public static boolean isLocalFileUri(Uri uri) {
         String scheme = uri.getScheme();
         return TextUtils.isEmpty(scheme) || scheme.equals("file");
+    }
+
+    public static byte[] getBytesFromHexString(String hexString) {
+        byte[] data = new byte[hexString.length() / 2];
+        for (int i = 0; i < data.length; i++) {
+            int stringOffset = i * 2;
+            data[i] = (byte) ((Character.digit(hexString.charAt(stringOffset), 16) << 4)
+                    + Character.digit(hexString.charAt(stringOffset + 1), 16));
+        }
+        return data;
     }
 }
