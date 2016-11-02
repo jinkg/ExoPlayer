@@ -21,7 +21,13 @@ public final class C {
 
     public static final long TIME_END_OF_SOURCE = Long.MIN_VALUE;
 
+    public static final long MICROS_PER_SECOND = 1000000L;
+
+    public static final long NANOS_PER_SECOND = 1000000000L;
+
     public static final int INDEX_UNSET = -1;
+
+    public static final int TRACK_TYPE_UNKNOWN = -1;
 
     public static final int TRACK_TYPE_DEFAULT = 0;
 
@@ -48,6 +54,22 @@ public final class C {
     public static final int RESULT_BUFFER_READ = -4;
 
     public static final int RESULT_FORMAT_READ = -5;
+
+    public static final int LENGTH_UNSET = -1;
+
+    public static final int DATA_TYPE_UNKNOWN = 0;
+
+    public static final int DATA_TYPE_MEDIA = 1;
+
+    public static final int DATA_TYPE_MEDIA_INITIALIZATION = 2;
+
+    public static final int DATA_TYPE_DRM = 3;
+
+    public static final int DATA_TYPE_MANIFEST = 4;
+
+    public static final int DATA_TYPE_TIME_SYNCHRONIZATION = 5;
+
+    public static final int DATA_TYPE_CUSTOM_BASE = 10000;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef({Format.NO_VALUE, STEREO_MODE_MONO, STEREO_MODE_TOP_BOTTOM, STEREO_MODE_LEFT_RIGHT})
@@ -85,6 +107,16 @@ public final class C {
     public static final int SELCTION_FLAG_FORCED = 2;
 
     public static final int SELCTION_FLAG_AUTOSELECT = 4;
+
+    public static final int SELECTION_REASON_UNKNOWN = 0;
+
+    public static final int SELECTION_REASON_INITIAL = 1;
+
+    public static final int SELECTION_REASON_MANUAL = 2;
+
+    public static final int SELECTION_REASON_ADAPTIVE = 3;
+
+    public static final int SELECTION_REASON_TRICK_PLAY = 4;
 
     @Retention(RetentionPolicy.SOURCE)
     @IntDef(flag = true, value = {BUFFER_FLAG_KEY_FRAME, BUFFER_FLAG_END_OF_STREAM,

@@ -10,7 +10,7 @@ import java.io.IOException;
  */
 
 public interface MediaPeriod extends SequenceableLoader {
-    interface Callback extends SequenceableLoader.Callback<MediaSource {
+    interface Callback extends SequenceableLoader.Callback<MediaPeriod> {
         void onPrepared(MediaPeriod mediaPeriod);
     }
 

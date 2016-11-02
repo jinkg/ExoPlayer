@@ -15,6 +15,10 @@ import java.util.List;
  */
 
 public final class TextRenderer extends BaseRenderer implements Handler.Callback {
+    public TextRenderer(int trackType) {
+        super(trackType);
+    }
+
     public interface Output {
         void onCues(List<Cue> cues);
     }

@@ -21,6 +21,6 @@ public class VideoFrameReleaseTimeHelper {
     }
 
     public long adjustReleaseTime(long framePresentationTimeUs, long unadjustedReleaseTimeNs) {
-
+        return 0;
     }
 }

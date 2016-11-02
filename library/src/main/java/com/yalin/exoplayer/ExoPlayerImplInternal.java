@@ -205,7 +205,7 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
     }
 
     @Override
-    public void onContinueLoadingRequested(MediaSource source) {
+    public void onContinueLoadingRequested(MediaPeriod source) {
         handler.obtainMessage(MSG_SOURCE_CONTINUE_LOADING_REQUESTED, source).sendToTarget();
     }
 

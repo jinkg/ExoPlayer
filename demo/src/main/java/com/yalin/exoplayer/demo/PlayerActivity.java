@@ -31,6 +31,7 @@ import com.yalin.exoplayer.trackslection.TrackSelections;
 import com.yalin.exoplayer.trackslection.TrackSelector;
 import com.yalin.exoplayer.ui.PlaybackControlView;
 import com.yalin.exoplayer.ui.SimpleExoPlayerView;
+import com.yalin.exoplayer.upstream.DataSource;
 import com.yalin.exoplayer.util.Util;
 
 
@@ -166,7 +167,11 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
     }
 
     private MediaSource buildMediaSource(Uri uri, String overrideExtension) {
-        return new SsMediaSource();
+        return new SsMediaSource(uri,);
+    }
+
+    private DataSource.Factory buildDataSourceFactory (boolean useBandWidthMeter){
+        return
     }
 
     private void releasePlayer() {
