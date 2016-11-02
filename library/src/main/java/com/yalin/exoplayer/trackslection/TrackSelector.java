@@ -2,6 +2,9 @@ package com.yalin.exoplayer.trackslection;
 
 import android.os.Handler;
 
+import com.yalin.exoplayer.ExoPlaybackException;
+import com.yalin.exoplayer.RendererCapabilities;
+import com.yalin.exoplayer.source.TrackGroupArray;
 import com.yalin.exoplayer.util.Assertions;
 
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -42,4 +45,12 @@ public abstract class TrackSelector<T> {
     public final void init(InvalidationListener listener) {
         this.listener = listener;
     }
+
+    public final void onSelectionActivated(TrackSelections<T> activeSelections) {
+
+    }
+
+    public abstract TrackSelections<T> selectTracks(
+            RendererCapabilities[] rendererCapabilities, TrackGroupArray trackGroups)
+            throws ExoPlaybackException;
 }
