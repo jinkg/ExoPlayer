@@ -45,6 +45,10 @@ public class DecoderInputBuffer extends Buffer {
         return getFlag(C.BUFFER_FLAG_ENCRYPTED);
     }
 
+    public void ensureSpaceForWrite(int length) throws IllegalStateException {
+
+    }
+
     public final void flip() {
         data.flip();
     }

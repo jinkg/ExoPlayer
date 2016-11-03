@@ -14,6 +14,7 @@ import java.lang.annotation.RetentionPolicy;
  */
 
 public final class C {
+
     private C() {
     }
 
@@ -26,6 +27,8 @@ public final class C {
     public static final long NANOS_PER_SECOND = 1000000000L;
 
     public static final int INDEX_UNSET = -1;
+
+    public static final int POSITION_UNSET = -1;
 
     public static final int TRACK_TYPE_UNKNOWN = -1;
 

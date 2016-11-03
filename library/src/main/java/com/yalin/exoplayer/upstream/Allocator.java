@@ -6,4 +6,16 @@ package com.yalin.exoplayer.upstream;
  */
 
 public interface Allocator {
+
+    Allocation allocate();
+
+    void release(Allocation allocation);
+
+    void release(Allocation[] allocations);
+
+    void trim();
+
+    int getTitalBytesAllocated();
+
+    int getIndividualAllocationLength();
 }

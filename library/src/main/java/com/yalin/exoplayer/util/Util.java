@@ -13,6 +13,9 @@ import android.text.TextUtils;
 
 import com.yalin.exoplayer.ExoPlayerLibraryInfo;
 
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -35,6 +38,8 @@ public class Util {
     public static final String MANUFACTURER = Build.MANUFACTURER;
 
     public static final String MODEL = Build.MODEL;
+
+    private static final char[] HEX_DIGITS = "0123456789ABCDEF".toCharArray();
 
     public static ExecutorService newSingleThreadExecutor(final String threadName) {
         return Executors.newSingleThreadExecutor(new ThreadFactory() {
@@ -89,6 +94,16 @@ public class Util {
                     + Character.digit(hexString.charAt(stringOffset + 1), 16));
         }
         return data;
+    }
+
+    private static String getHexString(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        int i = 0;
+        for (byte v : bytes) {
+            hexChars[i++] = HEX_DIGITS[(v >> 4) & 0xf];
+            hexChars[i++] = HEX_DIGITS[v & 0xf];
+        }
+        return new String(hexChars);
     }
 
     public static long scaleLargeTimestamp(long timestamp, long multiplier, long divisor) {
@@ -158,5 +173,17 @@ public class Util {
             }
         }
         return stringBuilder.toString();
+    }
+
+
+    public static String sha1(String input) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            byte[] bytes = input.getBytes("UTF-8");
+            digest.update(bytes, 0, bytes.length);
+            return getHexString(digest.digest());
+        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

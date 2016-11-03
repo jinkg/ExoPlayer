@@ -42,5 +42,4 @@ public abstract class Buffer {
     protected final boolean getFlag(@C.BufferFlags int flag) {
         return (flags & flag) == flag;
     }
-
 }

@@ -176,6 +176,6 @@ public abstract class BaseRenderer implements Renderer, RendererCapabilities {
     }
 
     protected void skipToKeyframeBefore(long timeUs) {
-        stream.skipToKeyframeBefor(timeUs);
+        stream.skipToKeyframeBefore(timeUs);
     }
 }

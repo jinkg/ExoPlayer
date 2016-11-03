@@ -17,5 +17,5 @@ public interface SampleStream {
 
     int readData(FormatHolder formatHolder, DecoderInputBuffer buffer);
 
-    void skipToKeyframeBefor(long timeUs);
+    void skipToKeyframeBefore(long timeUs);
 }
