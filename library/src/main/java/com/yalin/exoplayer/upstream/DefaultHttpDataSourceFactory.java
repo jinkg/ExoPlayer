@@ -1,6 +1,7 @@
 package com.yalin.exoplayer.upstream;
 
-import com.yalin.exoplayer.upstream.DataSource.Factory;
+
+import com.yalin.exoplayer.upstream.HttpDataSource.Factory;
 
 /**
  * 作者：YaLin
@@ -9,16 +10,16 @@ import com.yalin.exoplayer.upstream.DataSource.Factory;
 
 public class DefaultHttpDataSourceFactory implements Factory {
 
-    public DefaultHttpDataSourceFactory(String userAgent){
+    public DefaultHttpDataSourceFactory(String userAgent) {
 
     }
 
-    public DefaultHttpDataSourceFactory(String userAgent, TransferListener<? extends DataSource> listener) {
+    public DefaultHttpDataSourceFactory(String userAgent, TransferListener<? super DataSource> listener) {
 
     }
 
     @Override
-    public DataSource creteDataSource() {
+    public HttpDataSource creteDataSource() {
         return null;
     }
 }

@@ -22,6 +22,10 @@ public final class DrmInitData implements Comparator<DrmInitData.SchemeData>, Pa
 
     public final int schemeDataCount;
 
+    public DrmInitData(SchemeData... schemeDatas) {
+        this(true, schemeDatas);
+    }
+
     public DrmInitData(boolean cloneSchemeDatas, SchemeData... schemeDatas) {
         if (cloneSchemeDatas) {
             schemeDatas = schemeDatas.clone();
@@ -85,6 +89,10 @@ public final class DrmInitData implements Comparator<DrmInitData.SchemeData>, Pa
         public final byte[] data;
 
         public final boolean requiresSecureDecryption;
+
+        public SchemeData(UUID uuid, String mimeType, byte[] data) {
+            this(uuid, mimeType, data, false);
+        }
 
         public SchemeData(UUID uuid, String mimeType, byte[] data, boolean requiresSecureDecryption) {
             this.uuid = Assertions.checkNotNull(uuid);

@@ -137,4 +137,15 @@ public class Util {
         return applicationName + "/" + versionName + " (Linux;Android " + Build.VERSION.RELEASE
                 + ") " + "ExoPlayerLib/" + ExoPlayerLibraryInfo.VERSION;
     }
+
+    public static int getIntegerCodeForString(String string) {
+        int length = string.length();
+        Assertions.checkArgument(length <= 4);
+        int result = 0;
+        for (int i = 0; i < length; i++) {
+            result <<= 8;
+            result |= string.charAt(i);
+        }
+        return result;
+    }
 }

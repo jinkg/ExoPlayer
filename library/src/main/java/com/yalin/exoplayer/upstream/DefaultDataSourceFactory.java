@@ -15,11 +15,11 @@ public class DefaultDataSourceFactory implements Factory {
     }
 
     public DefaultDataSourceFactory(Context context, String userAgent,
-                                    TransferListener<? extends DataSource> listener) {
+                                    TransferListener<? super DataSource> listener) {
         this(context, listener, new DefaultHttpDataSourceFactory(userAgent, listener));
     }
 
-    public DefaultDataSourceFactory(Context context, TransferListener<? extends DataSource> listener,
+    public DefaultDataSourceFactory(Context context, TransferListener<? super DataSource> listener,
                                     DataSource.Factory baseDataSourceFactory) {
     }
 

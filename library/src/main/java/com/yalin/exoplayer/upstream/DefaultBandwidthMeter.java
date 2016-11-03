@@ -5,7 +5,7 @@ package com.yalin.exoplayer.upstream;
  * 日期：2016/11/2.
  */
 
-public final class DefaultBandwidthMeter implements BandWidthMeter,TransferListener<Object>{
+public final class DefaultBandwidthMeter implements BandWidthMeter, TransferListener<Object> {
     @Override
     public long getBitrateEstimate() {
         return 0;

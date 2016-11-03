@@ -76,6 +76,38 @@ public final class Format implements Parcelable {
     private int hashCode;
     private MediaFormat frameworkMediaFormat;
 
+    public static Format createVideoContainerFormat(String id, String containerMimeType,
+                                                    String sampleMimeType, String codecs, int bitrate, int width, int height,
+                                                    float frameRate, List<byte[]> initializationData) {
+        return new Format(id, containerMimeType, sampleMimeType, codecs, bitrate, NO_VALUE, width,
+                height, frameRate, NO_VALUE, NO_VALUE, null, NO_VALUE, NO_VALUE, NO_VALUE, NO_VALUE,
+                NO_VALUE, NO_VALUE, 0, null, OFFSET_SAMPLE_RELATIVE, initializationData, null);
+    }
+
+    public static Format createAudioContainerFormat(String id, String containerMimeType,
+                                                    String sampleMimeType, String codecs, int bitrate, int channelCount, int sampleRate,
+                                                    List<byte[]> initializationData, @C.SelectionFlags int selectionFlags, String language) {
+        return new Format(id, containerMimeType, sampleMimeType, codecs, bitrate, NO_VALUE, NO_VALUE,
+                NO_VALUE, NO_VALUE, NO_VALUE, NO_VALUE, null, NO_VALUE, channelCount, sampleRate, NO_VALUE,
+                NO_VALUE, NO_VALUE, selectionFlags, language, OFFSET_SAMPLE_RELATIVE, initializationData,
+                null);
+    }
+
+    public static Format createTextContainerFormat(String id, String containerMimeType,
+                                                   String sampleMimeType, String codecs, int bitrate, @C.SelectionFlags int selectionFlags,
+                                                   String language) {
+        return new Format(id, containerMimeType, sampleMimeType, codecs, bitrate, NO_VALUE, NO_VALUE,
+                NO_VALUE, NO_VALUE, NO_VALUE, NO_VALUE, null, NO_VALUE, NO_VALUE, NO_VALUE, NO_VALUE,
+                NO_VALUE, NO_VALUE, selectionFlags, language, OFFSET_SAMPLE_RELATIVE, null, null);
+    }
+
+    public static Format createContainerFormat(String id, String containerMimeType, String codecs,
+                                               String sampleMimeType, int bitrate) {
+        return new Format(id, containerMimeType, sampleMimeType, codecs, bitrate, NO_VALUE, NO_VALUE,
+                NO_VALUE, NO_VALUE, NO_VALUE, NO_VALUE, null, NO_VALUE, NO_VALUE, NO_VALUE, NO_VALUE,
+                NO_VALUE, NO_VALUE, 0, null, OFFSET_SAMPLE_RELATIVE, null, null);
+    }
+
     public Format(String id, String containerMimeType, String sampleMimeType, String codecs,
                   int bitrate, int maxInputSize, int width, int height, float frameRate, int rotationDegrees,
                   float pixelWidthHeightRatio, byte[] projectionData, @C.StereoMode int stereoMode,
@@ -151,6 +183,13 @@ public final class Format implements Parcelable {
         if (value != NO_VALUE) {
             format.setFloat(key, value);
         }
+    }
+
+    public Format copyWithDrmInitData(DrmInitData drmInitData) {
+        return new Format(id, containerMimeType, sampleMimeType, codecs, bitrate, maxInputSize,
+                width, height, frameRate, rotationDegrees, pixelWidthHeightRatio, projectionData,
+                stereoMode, channelCount, sampleRate, pcmEncoding, encoderDelay, encoderPadding,
+                selectionFlags, language, subsampleOffsetUs, initializationData, drmInitData);
     }
 
     @Override

@@ -8,6 +8,7 @@ package com.yalin.exoplayer.util;
 public final class MimeTypes {
     public static final String BASE_TYPE_VIDEO = "video";
     public static final String BASE_TYPE_AUDIO = "audio";
+    public static final String BASE_TYPE_APPLICATION = "application";
 
     public static final String VIDEO_MP4 = BASE_TYPE_VIDEO + "/mp4";
     public static final String VIDEO_WEBM = BASE_TYPE_VIDEO + "/webm";
@@ -40,6 +41,8 @@ public final class MimeTypes {
     public static final String AUDIO_AMR_WB = BASE_TYPE_AUDIO + "/amr-wb";
     public static final String AUDIO_FLAC = BASE_TYPE_AUDIO + "/x-flac";
 
+    public static final String APPLICATION_MP4 = BASE_TYPE_APPLICATION + "/mp4";
+    public static final String APPLICATION_TTML = BASE_TYPE_APPLICATION + "/ttml+xml";
 
     public static boolean isVideo(String mimeType) {
         return getTopLevelType(mimeType).equals(BASE_TYPE_VIDEO);

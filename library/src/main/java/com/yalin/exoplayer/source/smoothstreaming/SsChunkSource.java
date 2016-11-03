@@ -13,9 +13,9 @@ import com.yalin.exoplayer.upstream.LoaderErrorThrower;
 
 public interface SsChunkSource extends ChunkSource {
     interface Factory {
-        SsChunkSource createChunkSouce(LoaderErrorThrower manifestLoaderErrorThrower,
-                                       SsManifest manifest, int elementIndex, TrackSelection trackSelection,
-                                       TrackEncryptionBox[] trackEncryptionBoxes);
+        SsChunkSource createChunkSource(LoaderErrorThrower manifestLoaderErrorThrower,
+                                        SsManifest manifest, int elementIndex, TrackSelection trackSelection,
+                                        TrackEncryptionBox[] trackEncryptionBoxes);
     }
 
     void updateManifest(SsManifest newManifest);

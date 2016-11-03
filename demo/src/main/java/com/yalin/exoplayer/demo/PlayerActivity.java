@@ -21,6 +21,7 @@ import com.yalin.exoplayer.drm.DrmSessionManager;
 import com.yalin.exoplayer.drm.FrameworkMediaCrypto;
 import com.yalin.exoplayer.source.ConcatenatingMediaSource;
 import com.yalin.exoplayer.source.MediaSource;
+import com.yalin.exoplayer.source.smoothstreaming.DefaultSsChunkSource;
 import com.yalin.exoplayer.source.smoothstreaming.SsMediaSource;
 import com.yalin.exoplayer.trackslection.AdaptiveVideoTrackSelection;
 import com.yalin.exoplayer.trackslection.DefaultTrackSelector;
@@ -32,6 +33,7 @@ import com.yalin.exoplayer.trackslection.TrackSelector;
 import com.yalin.exoplayer.ui.PlaybackControlView;
 import com.yalin.exoplayer.ui.SimpleExoPlayerView;
 import com.yalin.exoplayer.upstream.DataSource;
+import com.yalin.exoplayer.upstream.DefaultBandwidthMeter;
 import com.yalin.exoplayer.util.Util;
 
 
@@ -49,6 +51,7 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
     private SimpleExoPlayer player;
     private MappingTrackSelector trackSelector;
 
+    private DataSource.Factory mediaDataSourceFactory;
     private boolean playerNeedsSource;
 
     private boolean shouldAutoPlay;
@@ -56,10 +59,13 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
     private int playerWindow;
     private long playerPosition;
 
+    private static final DefaultBandwidthMeter BANDWIDTH_METER = new DefaultBandwidthMeter();
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         shouldAutoPlay = true;
+        mediaDataSourceFactory = buildDataSourceFactory(true);
         mainHandler = new Handler();
         window = new Timeline.Window();
         setContentView(R.layout.activity_player);
@@ -150,7 +156,7 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
         if (playerNeedsSource) {
             Uri[] uris;
             String[] extensions;
-            uris = new Uri[]{intent.getData()};
+            uris = new Uri[]{Uri.parse("http://html5demos.com/assets/dizzy.mp4")};
             extensions = new String[]{"xxx"};
             if (Util.maybeRequestReadExternalStoragePermission(this, uris)) {
                 return;
@@ -167,11 +173,13 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
     }
 
     private MediaSource buildMediaSource(Uri uri, String overrideExtension) {
-        return new SsMediaSource(uri,);
+        return new SsMediaSource(uri, buildDataSourceFactory(false),
+                new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
     }
 
-    private DataSource.Factory buildDataSourceFactory (boolean useBandWidthMeter){
-        return
+    private DataSource.Factory buildDataSourceFactory(boolean useBandWidthMeter) {
+        return ((DemoApplication) getApplication())
+                .buildDataSourceFactory(useBandWidthMeter ? BANDWIDTH_METER : null);
     }
 
     private void releasePlayer() {
