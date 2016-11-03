@@ -148,4 +148,15 @@ public class Util {
         }
         return result;
     }
+
+    public static String getCommaDelimitedSimpleClassName(Object[] objects) {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int i = 0; i < objects.length; i++) {
+            stringBuilder.append(objects[i].getClass().getSimpleName());
+            if (i < objects.length - 1) {
+                stringBuilder.append(", ");
+            }
+        }
+        return stringBuilder.toString();
+    }
 }

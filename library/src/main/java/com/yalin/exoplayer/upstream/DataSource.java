@@ -11,7 +11,7 @@ import java.io.IOException;
 
 public interface DataSource {
     interface Factory {
-        DataSource creteDataSource();
+        DataSource createDataSource();
     }
 
     long open(DataSpec dataSpec) throws IOException;

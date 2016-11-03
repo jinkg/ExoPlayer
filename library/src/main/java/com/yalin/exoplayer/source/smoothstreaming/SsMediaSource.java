@@ -85,7 +85,7 @@ public final class SsMediaSource implements MediaSource,
     @Override
     public void prepareSource(Listener listener) {
         sourceListener = listener;
-        manifestDataSource = dataSourceFactory.creteDataSource();
+        manifestDataSource = dataSourceFactory.createDataSource();
         manifestLoader = new Loader("Loader:Manifest");
         manifestRefreshHandler = new Handler();
         startLoadingManifest();

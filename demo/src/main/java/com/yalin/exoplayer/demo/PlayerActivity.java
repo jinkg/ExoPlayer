@@ -19,7 +19,9 @@ import com.yalin.exoplayer.SimpleExoPlayer;
 import com.yalin.exoplayer.Timeline;
 import com.yalin.exoplayer.drm.DrmSessionManager;
 import com.yalin.exoplayer.drm.FrameworkMediaCrypto;
+import com.yalin.exoplayer.extractor.DefaultExtractorsFactory;
 import com.yalin.exoplayer.source.ConcatenatingMediaSource;
+import com.yalin.exoplayer.source.ExtractorMediaSource;
 import com.yalin.exoplayer.source.MediaSource;
 import com.yalin.exoplayer.source.smoothstreaming.DefaultSsChunkSource;
 import com.yalin.exoplayer.source.smoothstreaming.SsMediaSource;
@@ -173,8 +175,10 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
     }
 
     private MediaSource buildMediaSource(Uri uri, String overrideExtension) {
-        return new SsMediaSource(uri, buildDataSourceFactory(false),
-                new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
+//        return new SsMediaSource(uri, buildDataSourceFactory(false),
+//                new DefaultSsChunkSource.Factory(mediaDataSourceFactory), mainHandler, null);
+        return new ExtractorMediaSource(uri, mediaDataSourceFactory, new DefaultExtractorsFactory(),
+                mainHandler, null);
     }
 
     private DataSource.Factory buildDataSourceFactory(boolean useBandWidthMeter) {
