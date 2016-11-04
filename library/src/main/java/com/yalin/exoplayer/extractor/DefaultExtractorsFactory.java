@@ -19,7 +19,7 @@ public final class DefaultExtractorsFactory implements ExtractorsFactory {
 
                 try {
                     extractorClasses.add(
-                            Class.forName("com.google.android.exoplayer2.extractor.mkv.MatroskaExtractor")
+                            Class.forName("com.yalin.exoplayer.extractor.mp4.Mp4Extractor")
                                     .asSubclass(Extractor.class));
                 } catch (ClassNotFoundException ignored) {
 

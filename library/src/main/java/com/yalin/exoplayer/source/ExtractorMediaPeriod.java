@@ -68,7 +68,7 @@ final class ExtractorMediaPeriod implements MediaPeriod, ExtractorOutput,
     private boolean[] trackEnabledStates;
     private long length;
 
-    private long lastSeekPostionUs;
+    private long lastSeekPositionUs;
     private long pendingResetPositionUs;
 
     private int extractedSamplesCountAtStartOfLoad;
@@ -230,7 +230,7 @@ final class ExtractorMediaPeriod implements MediaPeriod, ExtractorOutput,
     public long readDiscontinuity() {
         if (notifyReset) {
             notifyReset = false;
-            return lastSeekPostionUs;
+            return lastSeekPositionUs;
         }
         return C.TIME_UNSET;
     }
@@ -243,7 +243,7 @@ final class ExtractorMediaPeriod implements MediaPeriod, ExtractorOutput,
             return pendingResetPositionUs;
         } else {
             long largestQueuedTimestampUs = getLargestQueuedTimestampUs();
-            return largestQueuedTimestampUs == Long.MIN_VALUE ? lastSeekPostionUs
+            return largestQueuedTimestampUs == Long.MIN_VALUE ? lastSeekPositionUs
                     : largestQueuedTimestampUs;
         }
     }
@@ -251,7 +251,7 @@ final class ExtractorMediaPeriod implements MediaPeriod, ExtractorOutput,
     @Override
     public long seekToUs(long positionUs) {
         positionUs = seekMap.isSeekable() ? positionUs : 0;
-        lastSeekPostionUs = positionUs;
+        lastSeekPositionUs = positionUs;
         int trackCount = sampleQueues.size();
         boolean seekInsideBuffer = !isPendingReset();
         for (int i = 0; seekInsideBuffer && i < trackCount; i++) {
@@ -345,10 +345,10 @@ final class ExtractorMediaPeriod implements MediaPeriod, ExtractorOutput,
 
     int readData(int track, FormatHolder formatHolder, DecoderInputBuffer buffer) {
         if (notifyReset || isPendingReset()) {
-            return C.RESULT_NOTING_READ;
+            return C.RESULT_NOTHING_READ;
         }
         return sampleQueues.valueAt(track).readData(formatHolder, buffer, loadingFinished,
-                lastSeekPostionUs);
+                lastSeekPositionUs);
     }
 
     private void configureRetry(ExtractingLoadable loadable) {
@@ -356,7 +356,7 @@ final class ExtractorMediaPeriod implements MediaPeriod, ExtractorOutput,
                 || (seekMap != null && seekMap.getDurationUs() != C.TIME_UNSET)) {
 
         } else {
-            lastSeekPostionUs = 0;
+            lastSeekPositionUs = 0;
             notifyReset = prepared;
             int trackCount = sampleQueues.size();
             for (int i = 0; i < trackCount; i++) {

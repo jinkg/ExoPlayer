@@ -10,6 +10,7 @@ import com.yalin.exoplayer.util.Assertions;
 import com.yalin.exoplayer.util.ParsableByteArray;
 import com.yalin.exoplayer.util.Util;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -48,7 +49,7 @@ public final class DefaultTrackOutput implements TrackOutput {
     private long totalBytesWritten;
     private Allocation lastAllocation;
     private int lastAllocationOffset;
-    private boolean neekKeyFrame;
+    private boolean needKeyframe;
     private boolean pendingSplice;
     private UpstreamFormatChangedListener upstreamFormatChangeListener;
 
@@ -61,7 +62,7 @@ public final class DefaultTrackOutput implements TrackOutput {
         scratch = new ParsableByteArray(INITIAL_SCRATCH_SIZE);
         state = new AtomicInteger();
         lastAllocationOffset = allocationLength;
-        neekKeyFrame = true;
+        needKeyframe = true;
     }
 
     public void reaset(boolean enable) {
@@ -154,12 +155,12 @@ public final class DefaultTrackOutput implements TrackOutput {
     public int readData(FormatHolder formatHolder, DecoderInputBuffer buffer, boolean loadingFinished,
                         long decodeOnlyUntilUs) {
         switch (infoQueue.readData(formatHolder, buffer, downstreamFormat, extrasHolder)) {
-            case C.RESULT_NOTING_READ:
+            case C.RESULT_NOTHING_READ:
                 if (loadingFinished) {
                     buffer.setFlags(C.BUFFER_FLAG_END_OF_STREAM);
                     return C.RESULT_BUFFER_READ;
                 }
-                return C.RESULT_NOTING_READ;
+                return C.RESULT_NOTHING_READ;
             case C.RESULT_FORMAT_READ:
                 downstreamFormat = formatHolder.format;
                 return C.RESULT_FORMAT_READ;
@@ -221,31 +222,110 @@ public final class DefaultTrackOutput implements TrackOutput {
     }
 
     public void reset(boolean enable) {
-
+        int previousState = state.getAndSet(enable ? STATE_ENABLED : STATE_DISABLED);
+        clearSampleData();
+        infoQueue.resetLargestParsedTimestamps();
+        if (previousState == STATE_DISABLED) {
+            downstreamFormat = null;
+        }
     }
 
     public void setUpstreamFormatChangeListener(UpstreamFormatChangedListener listener) {
-
+        upstreamFormatChangeListener = listener;
     }
 
     @Override
     public void format(Format format) {
-
+        Format adjustedFormat = getAdjustedSampleFormat(format, sampleOffsetUs);
+        boolean formatChanged = infoQueue.format(adjustedFormat);
+        if (upstreamFormatChangeListener != null && formatChanged) {
+            upstreamFormatChangeListener.onUpstreamFormatChanged(adjustedFormat);
+        }
     }
 
     @Override
-    public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput) throws IOException, InterruptedException {
-        return 0;
+    public int sampleData(ExtractorInput input, int length, boolean allowEndOfInput)
+            throws IOException, InterruptedException {
+        if (!startWriteOperation()) {
+            int bytesSkipped = input.skip(length);
+            if (bytesSkipped == C.RESULT_END_OF_INPUT) {
+                if (allowEndOfInput) {
+                    return C.RESULT_END_OF_INPUT;
+                }
+                throw new EOFException();
+            }
+            return bytesSkipped;
+        }
+        try {
+            length = prepareForAppend(length);
+            int bytesAppended = input.read(lastAllocation.data,
+                    lastAllocation.translateOffset(lastAllocationOffset), length);
+            if (bytesAppended == C.RESULT_END_OF_INPUT) {
+                if (allowEndOfInput) {
+                    return C.RESULT_END_OF_INPUT;
+                }
+                throw new EOFException();
+            }
+            lastAllocationOffset += bytesAppended;
+            totalBytesWritten += bytesAppended;
+            return bytesAppended;
+        } finally {
+            endWriteOperation();
+        }
     }
 
     @Override
-    public void sampleData(ParsableByteArray data, int length) {
-
+    public void sampleData(ParsableByteArray buffer, int length) {
+        if (!startWriteOperation()) {
+            buffer.skipBytes(length);
+            return;
+        }
+        while (length > 0) {
+            int thisAppendLength = prepareForAppend(length);
+            buffer.readBytes(lastAllocation.data, lastAllocation.translateOffset(lastAllocationOffset),
+                    thisAppendLength);
+            lastAllocationOffset += thisAppendLength;
+            totalBytesWritten += thisAppendLength;
+            length -= thisAppendLength;
+        }
+        endWriteOperation();
     }
 
     @Override
     public void sampleMetadata(long timeUs, @C.BufferFlags int flags, int size, int offset, byte[] encryptionKey) {
+        if (!startWriteOperation()) {
+            infoQueue.commitSampleTimestamp(timeUs);
+            return;
+        }
+        try {
+            if (pendingSplice) {
+                if ((flags & C.BUFFER_FLAG_KEY_FRAME) == 0 || !infoQueue.attemptSplice(timeUs)) {
+                    return;
+                }
+                pendingSplice = false;
+            }
+            if (needKeyframe) {
+                if ((flags & C.BUFFER_FLAG_KEY_FRAME) == 0) {
+                    return;
+                }
+                needKeyframe = false;
+            }
+            timeUs += sampleOffsetUs;
+            long absoluteOffset = totalBytesWritten - size - offset;
+            infoQueue.commitSample(timeUs, flags, absoluteOffset, size, encryptionKey);
+        } finally {
+            endWriteOperation();
+        }
+    }
 
+    private static Format getAdjustedSampleFormat(Format format, long sampleOffsetUs) {
+        if (format == null) {
+            return null;
+        }
+        if (sampleOffsetUs != 0 && format.subsampleOffsetUs != Format.OFFSET_SAMPLE_RELATIVE) {
+            format = format.copyWithSubsampleOffsetUs(format.subsampleOffsetUs + sampleOffsetUs);
+        }
+        return format;
     }
 
     private void dropDownstreamTo(long absolutePosition) {
@@ -257,6 +337,25 @@ public final class DefaultTrackOutput implements TrackOutput {
         }
     }
 
+    private boolean startWriteOperation() {
+        return state.compareAndSet(STATE_ENABLED, STATE_ENABLED_WRITING);
+    }
+
+    private void endWriteOperation() {
+        if (!state.compareAndSet(STATE_ENABLED_WRITING, STATE_ENABLED)) {
+            clearSampleData();
+        }
+    }
+
+    private int prepareForAppend(int length) {
+        if (lastAllocationOffset == allocationLength) {
+            lastAllocationOffset = 0;
+            lastAllocation = allocator.allocate();
+            dataQueue.add(lastAllocation);
+        }
+        return Math.min(length, allocationLength - lastAllocationOffset);
+    }
+
     private void clearSampleData() {
         infoQueue.clearSampleData();
         allocator.release(dataQueue.toArray(new Allocation[dataQueue.size()]));
@@ -266,7 +365,7 @@ public final class DefaultTrackOutput implements TrackOutput {
         totalBytesWritten = 0;
         lastAllocation = null;
         lastAllocationOffset = allocationLength;
-        neekKeyFrame = true;
+        needKeyframe = true;
 
     }
 
@@ -477,7 +576,7 @@ public final class DefaultTrackOutput implements TrackOutput {
                     formatHolder.format = upstreamFormat;
                     return C.RESULT_FORMAT_READ;
                 }
-                return C.RESULT_NOTING_READ;
+                return C.RESULT_NOTHING_READ;
             }
 
             if (formats[relativeReadIndex] != downstreamFormat) {
@@ -502,6 +601,19 @@ public final class DefaultTrackOutput implements TrackOutput {
             extrasHolder.nextOffset = queueSize > 0 ? offsets[relativeReadIndex]
                     : extrasHolder.offset + extrasHolder.size;
             return C.RESULT_BUFFER_READ;
+        }
+
+        public synchronized boolean attemptSplice(long timeUs) {
+            if (largestDequeuedTimestampUs >= timeUs) {
+                return false;
+            }
+            int retainCount = queueSize;
+            while (retainCount > 0
+                    && timesUs[(relativeReadIndex + retainCount - 1) % capacity] >= timeUs) {
+                retainCount--;
+            }
+            discardUpstreamSamples(absoluteReadIndex + retainCount);
+            return true;
         }
     }
 

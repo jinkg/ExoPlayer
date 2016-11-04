@@ -561,7 +561,7 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
             return;
         }
         loadingPeriodHolder.handlePrepared(loadingPeriodHolder.startPositionUs, loadControl);
-        if (playingPeriodHolder != null) {
+        if (playingPeriodHolder == null) {
             readingPeriodHolder = loadingPeriodHolder;
             setPlayingPeriodHolder(readingPeriodHolder);
             if (playbackInfo.startPositionUs == C.TIME_UNSET) {
@@ -1098,7 +1098,7 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
 
         public MediaPeriodHolder(Renderer[] renderers, RendererCapabilities[] rendererCapabilities,
                                  TrackSelector<T> trackSelector, MediaSource mediaSource, MediaPeriod mediaPeriod,
-                                 Object uid, long positonUs) {
+                                 Object uid, long positionUs) {
             this.renderers = renderers;
             this.rendererCapabilities = rendererCapabilities;
             this.trackSelector = trackSelector;
@@ -1107,7 +1107,7 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
             this.uid = Assertions.checkNotNull(uid);
             sampleStreams = new SampleStream[renderers.length];
             mayRetainStreamFlags = new boolean[renderers.length];
-            startPositionUs = positonUs;
+            startPositionUs = positionUs;
         }
 
         public void setNext(MediaPeriodHolder<T> next) {
@@ -1138,10 +1138,10 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
                     Assertions.checkState(trackSelections.get(i) != null);
                     hasEnabledTracks = true;
                 } else {
-                    Assertions.checkState(trackSelections.get(i) != null);
+                    Assertions.checkState(trackSelections.get(i) == null);
                 }
             }
-            loadControl.onTrackSelected(renderers, mediaPeriod.getTrackGroups(), trackSelections);
+            loadControl.onTracksSelected(renderers, mediaPeriod.getTrackGroups(), trackSelections);
             return positionUs;
         }
 

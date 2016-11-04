@@ -15,7 +15,7 @@ public interface Allocator {
 
     void trim();
 
-    int getTitalBytesAllocated();
+    int getTotalBytesAllocated();
 
     int getIndividualAllocationLength();
 }

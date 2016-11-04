@@ -12,8 +12,8 @@ import com.yalin.exoplayer.upstream.Allocator;
 public interface LoadControl {
     void onPrepared();
 
-    void onTrackSelected(Renderer[] renderers, TrackGroupArray trackGroups,
-                         TrackSelections<?> trackSelections);
+    void onTracksSelected(Renderer[] renderers, TrackGroupArray trackGroups,
+                          TrackSelections<?> trackSelections);
 
     void onStopped();
 

@@ -3,6 +3,7 @@ package com.yalin.exoplayer.drm;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.yalin.exoplayer.C;
 import com.yalin.exoplayer.util.Assertions;
 
 import java.util.Arrays;
@@ -67,6 +68,15 @@ public final class DrmInitData implements Comparator<DrmInitData.SchemeData>, Pa
         return schemeDatas[index];
     }
 
+    public SchemeData get(UUID uuid) {
+        for (SchemeData schemeData : schemeDatas) {
+            if (schemeData.matches(uuid)) {
+                return schemeData;
+            }
+        }
+        return null;
+    }
+
     public static final Creator<DrmInitData> CREATOR = new Creator<DrmInitData>() {
         @Override
         public DrmInitData createFromParcel(Parcel source) {
@@ -99,6 +109,10 @@ public final class DrmInitData implements Comparator<DrmInitData.SchemeData>, Pa
             this.mimeType = Assertions.checkNotNull(mimeType);
             this.data = Assertions.checkNotNull(data);
             this.requiresSecureDecryption = requiresSecureDecryption;
+        }
+
+        public boolean matches(UUID schemeUuid) {
+            return C.UUID_NIL.equals(uuid) || schemeUuid.equals(uuid);
         }
 
         @Override

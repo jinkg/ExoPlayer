@@ -1,19 +1,26 @@
 package com.yalin.exoplayer.util;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
+import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
 
+import com.yalin.exoplayer.C;
 import com.yalin.exoplayer.ExoPlayerLibraryInfo;
 
 import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -29,6 +36,8 @@ import java.util.concurrent.ThreadFactory;
  */
 
 public class Util {
+    private static final String TAG = "Util";
+
     public static final int SDK_INT =
             (Build.VERSION.SDK_INT == 23 && Build.VERSION.CODENAME.charAt(0) == 'N') ? 24
                     : Build.VERSION.SDK_INT;
@@ -175,6 +184,35 @@ public class Util {
         return stringBuilder.toString();
     }
 
+    public static int binarySearchCeil(long[] a, long value, boolean inclusive,
+                                       boolean stayInBounds) {
+        int index = Arrays.binarySearch(a, value);
+        index = index < 0 ? ~index : (inclusive ? index : (index + 1));
+        return stayInBounds ? Math.min(a.length - 1, index) : index;
+    }
+
+    public static int ceilDivide(int numerator, int denominator) {
+        return (numerator + denominator - 1) / denominator;
+    }
+
+    public static void scaleLargeTimestampsInPlace(long[] timestamps, long multiplier, long divisor) {
+        if (divisor >= multiplier && (divisor % multiplier) == 0) {
+            long divisionFactor = divisor / multiplier;
+            for (int i = 0; i < timestamps.length; i++) {
+                timestamps[i] /= divisionFactor;
+            }
+        } else if (divisor < multiplier && (multiplier % divisor) == 0) {
+            long multiplicationFactor = multiplier / divisor;
+            for (int i = 0; i < timestamps.length; i++) {
+                timestamps[i] *= multiplicationFactor;
+            }
+        } else {
+            double multiplicationFactor = (double) multiplier / divisor;
+            for (int i = 0; i < timestamps.length; i++) {
+                timestamps[i] = (long) (timestamps[i] * multiplicationFactor);
+            }
+        }
+    }
 
     public static String sha1(String input) {
         try {
@@ -185,5 +223,115 @@ public class Util {
         } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static int getDefaultBufferSize(int trackType) {
+        switch (trackType) {
+            case C.TRACK_TYPE_DEFAULT:
+                return C.DEFAULT_MUXED_BUFFER_SIZE;
+            case C.TRACK_TYPE_AUDIO:
+                return C.DEFAULT_AUDIO_BUFFER_SIZE;
+            case C.TRACK_TYPE_VIDEO:
+                return C.DEFAULT_VIDEO_BUFFER_SIZE;
+            case C.TRACK_TYPE_TEXT:
+                return C.DEFAULT_TEXT_BUFFER_SIZE;
+            case C.TRACK_TYPE_METADATA:
+                return C.DEFAULT_METADATA_BUFFER_SIZE;
+            default:
+                throw new IllegalStateException();
+        }
+    }
+
+    public static String normalizeLanguageCode(String language) {
+        return language == null ? null : new Locale(language).getLanguage();
+    }
+
+    public static Point getPhysicalDisplaySize(Context context) {
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        return getPhysicalDisplaySize(context, windowManager.getDefaultDisplay());
+    }
+
+    public static Point getPhysicalDisplaySize(Context context, Display display) {
+        if (Util.SDK_INT < 25 && display.getDisplayId() == Display.DEFAULT_DISPLAY) {
+            // Before API 25 the Display object does not provide a working way to identify Android TVs
+            // that can show 4k resolution in a SurfaceView, so check for supported devices here.
+            if ("Sony".equals(Util.MANUFACTURER) && Util.MODEL.startsWith("BRAVIA")
+                    && context.getPackageManager().hasSystemFeature("com.sony.dtv.hardware.panel.qfhd")) {
+                return new Point(3840, 2160);
+            } else if ("NVIDIA".equals(Util.MANUFACTURER) && Util.MODEL.contains("SHIELD")) {
+                // Attempt to read sys.display-size.
+                String sysDisplaySize = null;
+                try {
+                    Class<?> systemProperties = Class.forName("android.os.SystemProperties");
+                    Method getMethod = systemProperties.getMethod("get", String.class);
+                    sysDisplaySize = (String) getMethod.invoke(systemProperties, "sys.display-size");
+                } catch (Exception e) {
+                    Log.e(TAG, "Failed to read sys.display-size", e);
+                }
+                // If we managed to read sys.display-size, attempt to parse it.
+                if (!TextUtils.isEmpty(sysDisplaySize)) {
+                    try {
+                        String[] sysDisplaySizeParts = sysDisplaySize.trim().split("x");
+                        if (sysDisplaySizeParts.length == 2) {
+                            int width = Integer.parseInt(sysDisplaySizeParts[0]);
+                            int height = Integer.parseInt(sysDisplaySizeParts[1]);
+                            if (width > 0 && height > 0) {
+                                return new Point(width, height);
+                            }
+                        }
+                    } catch (NumberFormatException e) {
+                        // Do nothing.
+                    }
+                    Log.e(TAG, "Invalid sys.display-size: " + sysDisplaySize);
+                }
+            }
+        }
+
+        Point displaySize = new Point();
+        if (Util.SDK_INT >= 23) {
+            getDisplaySizeV23(display, displaySize);
+        } else if (Util.SDK_INT >= 17) {
+            getDisplaySizeV17(display, displaySize);
+        } else if (Util.SDK_INT >= 16) {
+            getDisplaySizeV16(display, displaySize);
+        } else {
+            getDisplaySizeV9(display, displaySize);
+        }
+        return displaySize;
+    }
+
+    @TargetApi(23)
+    private static void getDisplaySizeV23(Display display, Point outSize) {
+        Display.Mode mode = display.getMode();
+        outSize.x = mode.getPhysicalWidth();
+        outSize.y = mode.getPhysicalHeight();
+    }
+
+    @TargetApi(17)
+    private static void getDisplaySizeV17(Display display, Point outSize) {
+        display.getRealSize(outSize);
+    }
+
+    @TargetApi(16)
+    private static void getDisplaySizeV16(Display display, Point outSize) {
+        display.getSize(outSize);
+    }
+
+    @SuppressWarnings("deprecation")
+    private static void getDisplaySizeV9(Display display, Point outSize) {
+        outSize.x = display.getWidth();
+        outSize.y = display.getHeight();
+    }
+
+    public static int[] toArray(List<Integer> list) {
+        if (list == null) {
+            return null;
+        }
+        int length = list.size();
+        int[] intArray = new int[length];
+        for (int i = 0; i < length; i++) {
+            intArray[i] = list.get(i);
+        }
+        return intArray;
     }
 }

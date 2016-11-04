@@ -5,7 +5,7 @@ package com.yalin.exoplayer.upstream;
  * 日期：2016/11/2.
  */
 
-public interface BandWidthMeter {
+public interface BandwidthMeter {
     interface EventListener {
         void onBandwidthSample(int elapsedMs, long bytes, long bitrate);
     }

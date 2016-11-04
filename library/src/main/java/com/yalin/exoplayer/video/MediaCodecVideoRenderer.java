@@ -295,7 +295,7 @@ public class MediaCodecVideoRenderer extends MediaCodecRenderer {
     @Override
     public void handleMessage(int messageType, Object message) throws ExoPlaybackException {
         if (messageType == C.MSG_SET_SURFACE) {
-            setSurface(surface);
+            setSurface((Surface) message);
         } else {
             super.handleMessage(messageType, message);
         }

@@ -540,7 +540,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
             result = readSource(formatHolder, buffer);
         }
 
-        if (result == C.RESULT_NOTING_READ) {
+        if (result == C.RESULT_NOTHING_READ) {
             return false;
         }
 

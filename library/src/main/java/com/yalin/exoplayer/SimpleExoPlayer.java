@@ -11,10 +11,13 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.TextureView;
 
+import com.yalin.exoplayer.audio.AudioRendererEventListener;
 import com.yalin.exoplayer.decoder.DecoderCounters;
 import com.yalin.exoplayer.drm.DrmSessionManager;
 import com.yalin.exoplayer.drm.FrameworkMediaCrypto;
 import com.yalin.exoplayer.mediacodec.MediaCodecSelector;
+import com.yalin.exoplayer.metadata.MetadataRenderer;
+import com.yalin.exoplayer.metadata.id3.Id3Frame;
 import com.yalin.exoplayer.source.MediaSource;
 import com.yalin.exoplayer.text.TextRenderer;
 import com.yalin.exoplayer.trackslection.TrackSelections;
@@ -23,6 +26,7 @@ import com.yalin.exoplayer.video.MediaCodecVideoRenderer;
 import com.yalin.exoplayer.video.VideoRendererEventListener;
 
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 作者：YaLin
@@ -179,6 +183,18 @@ public final class SimpleExoPlayer implements ExoPlayer {
     @Override
     public void addListener(EventListener listener) {
         player.addListener(listener);
+    }
+
+    public void setAudioDebugListener(AudioRendererEventListener listener) {
+//        audioDebugListener = listener;
+    }
+
+    public void setVideoDebugListener(VideoRendererEventListener listener) {
+//        videoDebugListener = listener;
+    }
+
+    public void setId3Output(MetadataRenderer.Output<List<Id3Frame>> output) {
+//        id3Output = output;
     }
 
     @Override

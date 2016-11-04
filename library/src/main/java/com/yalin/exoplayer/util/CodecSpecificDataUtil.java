@@ -1,5 +1,7 @@
 package com.yalin.exoplayer.util;
 
+import android.util.Pair;
+
 import com.yalin.exoplayer.C;
 
 import java.util.ArrayList;
@@ -13,7 +15,9 @@ import java.util.List;
 public final class CodecSpecificDataUtil {
     private static final byte[] NAL_START_CODE = new byte[]{0, 0, 0, 1};
 
-    private static final int[] AUDIO_SEPCIFIC_CONFIG_SAMPLING_RATE_TABLE = new int[]{
+    private static final int AUDIO_SPECIFIC_CONFIG_FREQUENCY_INDEX_ARBITRARY = 0xF;
+
+    private static final int[] AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE = new int[]{
             96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350
     };
 
@@ -38,7 +42,14 @@ public final class CodecSpecificDataUtil {
             AUDIO_SPECIFIC_CONFIG_CHANNEL_CONFIGURATION_INVALID
     };
 
+    // Advanced Audio Coding Low-Complexity profile.
     private static final int AUDIO_OBJECT_TYPE_AAC_LC = 2;
+    // Spectral Band Replication.
+    private static final int AUDIO_OBJECT_TYPE_SBR = 5;
+    // Error Resilient Bit-Sliced Arithmetic Coding.
+    private static final int AUDIO_OBJECT_TYPE_ER_BSAC = 22;
+    // Parametric Stereo.
+    private static final int AUDIO_OBJECT_TYPE_PS = 29;
 
     public static byte[][] splitNalUnits(byte[] data) {
         if (!isNalStartCode(data, 0)) {
@@ -85,8 +96,8 @@ public final class CodecSpecificDataUtil {
 
     public static byte[] buildAacLcAudioSpecificConfig(int sampleRate, int numChannels) {
         int sampleRateIndex = C.INDEX_UNSET;
-        for (int i = 0; i < AUDIO_SEPCIFIC_CONFIG_SAMPLING_RATE_TABLE.length; ++i) {
-            if (sampleRate == AUDIO_SEPCIFIC_CONFIG_SAMPLING_RATE_TABLE[i]) {
+        for (int i = 0; i < AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE.length; ++i) {
+            if (sampleRate == AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE[i]) {
                 sampleRateIndex = i;
             }
         }
@@ -110,5 +121,48 @@ public final class CodecSpecificDataUtil {
         specificConfig[0] = (byte) (((audioObjectType << 3) & 0xF8) | ((sampleRateIndex >> 1) & 0x07));
         specificConfig[1] = (byte) (((sampleRateIndex << 7) & 0x80) | ((channelConfig << 3) & 0x78));
         return specificConfig;
+    }
+
+    public static byte[] buildNalUnit(byte[] data, int offset, int length) {
+        byte[] nalUnit = new byte[length + NAL_START_CODE.length];
+        System.arraycopy(NAL_START_CODE, 0, nalUnit, 0, NAL_START_CODE.length);
+        System.arraycopy(data, offset, nalUnit, NAL_START_CODE.length, length);
+        return nalUnit;
+    }
+
+    public static Pair<Integer, Integer> parseAacAudioSpecificConfig(byte[] audioSpecificConfig) {
+        ParsableBitArray bitArray = new ParsableBitArray(audioSpecificConfig);
+        int audioObjectType = bitArray.readBits(5);
+        int frequencyIndex = bitArray.readBits(4);
+        int sampleRate;
+        if (frequencyIndex == AUDIO_SPECIFIC_CONFIG_FREQUENCY_INDEX_ARBITRARY) {
+            sampleRate = bitArray.readBits(24);
+        } else {
+            Assertions.checkArgument(frequencyIndex < 13);
+            sampleRate = AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE[frequencyIndex];
+        }
+        int channelConfiguration = bitArray.readBits(4);
+        if (audioObjectType == AUDIO_OBJECT_TYPE_SBR || audioObjectType == AUDIO_OBJECT_TYPE_PS) {
+            // For an AAC bitstream using spectral band replication (SBR) or parametric stereo (PS) with
+            // explicit signaling, we return the extension sampling frequency as the sample rate of the
+            // content; this is identical to the sample rate of the decoded output but may differ from
+            // the sample rate set above.
+            // Use the extensionSamplingFrequencyIndex.
+            frequencyIndex = bitArray.readBits(4);
+            if (frequencyIndex == AUDIO_SPECIFIC_CONFIG_FREQUENCY_INDEX_ARBITRARY) {
+                sampleRate = bitArray.readBits(24);
+            } else {
+                Assertions.checkArgument(frequencyIndex < 13);
+                sampleRate = AUDIO_SPECIFIC_CONFIG_SAMPLING_RATE_TABLE[frequencyIndex];
+            }
+            audioObjectType = bitArray.readBits(5);
+            if (audioObjectType == AUDIO_OBJECT_TYPE_ER_BSAC) {
+                // Use the extensionChannelConfiguration.
+                channelConfiguration = bitArray.readBits(4);
+            }
+        }
+        int channelCount = AUDIO_SPECIFIC_CONFIG_CHANNEL_COUNT_TABLE[channelConfiguration];
+        Assertions.checkArgument(channelCount != AUDIO_SPECIFIC_CONFIG_CHANNEL_CONFIGURATION_INVALID);
+        return Pair.create(sampleRate, channelCount);
     }
 }

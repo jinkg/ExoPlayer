@@ -49,6 +49,7 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
     private SimpleExoPlayerView simpleExoPlayerView;
     private Timeline.Window window;
     private Handler mainHandler;
+    private EventLogger eventLogger;
 
     private SimpleExoPlayer player;
     private MappingTrackSelector trackSelector;
@@ -137,15 +138,21 @@ public class PlayerActivity extends AppCompatActivity implements PlaybackControl
             boolean preferExtensionDecoders = true;
             DrmSessionManager<FrameworkMediaCrypto> drmSessionManager = null;
 
+            eventLogger = new EventLogger();
             TrackSelection.Factory videoTrackSelectionFactory =
-                    new AdaptiveVideoTrackSelection.Factory();
+                    new AdaptiveVideoTrackSelection.Factory(BANDWIDTH_METER);
             trackSelector = new DefaultTrackSelector(mainHandler, videoTrackSelectionFactory);
             trackSelector.addListener(this);
+            trackSelector.addListener(eventLogger);
             player = ExoPlayerFactory.newSimpleInstance(this, trackSelector, new DefaultLoadControl(),
                     drmSessionManager, preferExtensionDecoders);
             player.addListener(this);
             simpleExoPlayerView.setPlayer(player);
             player.setPlayWhenReady(shouldAutoPlay);
+            player.addListener(eventLogger);
+            player.setAudioDebugListener(eventLogger);
+            player.setVideoDebugListener(eventLogger);
+            player.setId3Output(eventLogger);
             if (isTimelineStatic) {
                 if (playerPosition == C.TIME_UNSET) {
                     player.seekToDefaultPosition(playerWindow);

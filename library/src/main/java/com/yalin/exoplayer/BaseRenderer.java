@@ -164,7 +164,7 @@ public abstract class BaseRenderer implements Renderer, RendererCapabilities {
         if (result == C.RESULT_BUFFER_READ) {
             if (buffer.isEndOfStream()) {
                 readEndOfStream = true;
-                return streamIsFinal ? C.RESULT_BUFFER_READ : C.RESULT_NOTING_READ;
+                return streamIsFinal ? C.RESULT_BUFFER_READ : C.RESULT_NOTHING_READ;
             }
             buffer.timeUs += streamOffsetUs;
         }

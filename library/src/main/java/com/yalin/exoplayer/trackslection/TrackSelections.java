@@ -16,6 +16,12 @@ public final class TrackSelections<T> {
 
     private int hashCode;
 
+    public TrackSelections(T info, TrackSelection... trackSelections) {
+        this.info = info;
+        this.trackSelections = trackSelections;
+        this.length = trackSelections.length;
+    }
+
     public TrackSelections(T info, TrackSelection[] trackSelections, int length) {
         this.info = info;
         this.trackSelections = trackSelections;

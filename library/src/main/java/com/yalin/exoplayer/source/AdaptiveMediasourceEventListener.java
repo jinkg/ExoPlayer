@@ -14,9 +14,9 @@ import java.io.IOException;
  */
 
 public interface AdaptiveMediaSourceEventListener {
-    void onLoadStart(DataSpec dataSpec, int dataType, int trackType, Format trackFormat,
-                     int trackSelectionReason, Object trackSelectionData, long mediaStartTimeMs,
-                     long mediaEndTimeMs, long elapsedRealtimeMs);
+    void onLoadStarted(DataSpec dataSpec, int dataType, int trackType, Format trackFormat,
+                       int trackSelectionReason, Object trackSelectionData, long mediaStartTimeMs,
+                       long mediaEndTimeMs, long elapsedRealtimeMs);
 
     void onLoadCompleted(DataSpec dataSpec, int dataType, int trackType, Format trackFormat,
                          int trackSelectionReason, Object trackSelectionData, long mediaStartTimeMs,
@@ -31,7 +31,7 @@ public interface AdaptiveMediaSourceEventListener {
                      long mediaEndTimeMs, long elapsedRealtimeMs, long loadDuarationMs, long bytesLoaded,
                      IOException error, boolean wasCanceled);
 
-    void onUpStreamDiscarded(int trackType, long mediaStartTimeMs, long mediaEndTimeMs);
+    void onUpstreamDiscarded(int trackType, long mediaStartTimeMs, long mediaEndTimeMs);
 
     void onDownstreamFormatChanged(int trackType, Format trackFormat, int trackSelectionReason,
                                    Object trackSelectionData, long mediaTimeMs);
@@ -57,7 +57,7 @@ public interface AdaptiveMediaSourceEventListener {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        listener.onLoadStart(dataSpec, dataType, trackType, trackFormat, trackSelectionReason,
+                        listener.onLoadStarted(dataSpec, dataType, trackType, trackFormat, trackSelectionReason,
                                 trackSelectionData, C.usToMs(mediaStartTimeUs), C.usToMs(mediaEndTimeUs),
                                 elapsedRealtimeMs);
                     }
@@ -139,7 +139,7 @@ public interface AdaptiveMediaSourceEventListener {
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
-                        listener.onUpStreamDiscarded(trackType, C.usToMs(mediaStartTimeUs),
+                        listener.onUpstreamDiscarded(trackType, C.usToMs(mediaStartTimeUs),
                                 C.usToMs(mediaEndTimeUs));
                     }
                 });
