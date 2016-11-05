@@ -436,7 +436,7 @@ final class ExoPlayerImplInternal<T> implements Handler.Callback, TrackSelector.
         } else {
             handler.removeMessages(MSG_DO_SOME_WORK);
         }
-        TraceUtil.endSecion();
+        TraceUtil.endSection();
     }
 
     private void scheduleNextWork(long thisOperationStartTimeMs, long intervalMs) {

@@ -329,7 +329,7 @@ public final class DefaultTrackOutput implements TrackOutput {
     }
 
     private void dropDownstreamTo(long absolutePosition) {
-        int relativePosition = (int) (absolutePosition - totalBytesWritten);
+        int relativePosition = (int) (absolutePosition - totalBytesDropped);
         int allocationIndex = relativePosition / allocationLength;
         for (int i = 0; i < allocationIndex; i++) {
             allocator.release(dataQueue.remove());

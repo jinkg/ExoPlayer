@@ -7,4 +7,6 @@ package com.yalin.exoplayer;
 
 public interface ExoPlayerLibraryInfo {
     String VERSION = "2.0.4";
+
+    boolean TRACE_ENABLED = true;
 }

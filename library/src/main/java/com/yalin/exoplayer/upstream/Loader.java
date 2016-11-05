@@ -157,7 +157,7 @@ public final class Loader implements LoaderErrorThrower {
                     try {
                         loadable.load();
                     } finally {
-                        TraceUtil.endSecion();
+                        TraceUtil.endSection();
                     }
                 }
                 if (!released) {

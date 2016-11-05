@@ -237,13 +237,13 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
             long codecInitializingTimestamp = SystemClock.elapsedRealtime();
             TraceUtil.beginSection("createCodec:" + codecName);
             codec = MediaCodec.createByCodecName(codecName);
-            TraceUtil.endSecion();
+            TraceUtil.endSection();
             TraceUtil.beginSection("configureCodec");
             configureCodec(codec, format, mediaCrypto);
-            TraceUtil.endSecion();
+            TraceUtil.endSection();
             TraceUtil.beginSection("startCodec");
             codec.start();
-            TraceUtil.endSecion();
+            TraceUtil.endSection();
             long codecInitializedTimestamp = SystemClock.elapsedRealtime();
             onCodecInitialized(codecName, codecInitializedTimestamp,
                     codecInitializedTimestamp - codecInitializingTimestamp);
@@ -387,7 +387,7 @@ public abstract class MediaCodecRenderer extends BaseRenderer {
             //noinspection StatementWithEmptyBody
             while (feedInputBuffer()) {
             }
-            TraceUtil.endSecion();
+            TraceUtil.endSection();
         } else if (format != null) {
             skipToKeyframeBefore(positionUs);
         }
