@@ -132,24 +132,26 @@ public final class MediaCodecUtil {
                 String codecName = codecInfo.getName();
                 if (isCodecUsableDecoder(codecInfo, codecName, secureDecodersExplicit)) {
                     for (String supportedType : codecInfo.getSupportedTypes()) {
-                        try {
-                            CodecCapabilities capabilities = codecInfo.getCapabilitiesForType(supportedType);
-                            boolean secure = mediaCodecList.isSecurePlaybackSupported(mimeType, capabilities);
-                            if ((secureDecodersExplicit && key.secure == secure)
-                                    || (!secureDecodersExplicit && !key.secure)) {
-                                decoderInfos.add(
-                                        MediaCodecInfo.newInstance(codecName, mimeType, capabilities));
-                            } else if (!secureDecodersExplicit && secure) {
-                                decoderInfos.add(MediaCodecInfo.newInstance(codecName + ".secure",
-                                        mimeType, capabilities));
-                                return decoderInfos;
-                            }
-                        } catch (Exception e) {
-                            if (Util.SDK_INT <= 23 && !decoderInfos.isEmpty()) {
-                                Log.e(TAG, "Skipping codec " + codecName + " (failed to query capabilities)");
-                            } else {
-                                Log.e(TAG, "Failed to query codec " + codecName + " (" + supportedType + ")");
-                                throw e;
+                        if (supportedType.equalsIgnoreCase(mimeType)) {
+                            try {
+                                CodecCapabilities capabilities = codecInfo.getCapabilitiesForType(supportedType);
+                                boolean secure = mediaCodecList.isSecurePlaybackSupported(mimeType, capabilities);
+                                if ((secureDecodersExplicit && key.secure == secure)
+                                        || (!secureDecodersExplicit && !key.secure)) {
+                                    decoderInfos.add(
+                                            MediaCodecInfo.newInstance(codecName, mimeType, capabilities));
+                                } else if (!secureDecodersExplicit && secure) {
+                                    decoderInfos.add(MediaCodecInfo.newInstance(codecName + ".secure",
+                                            mimeType, capabilities));
+                                    return decoderInfos;
+                                }
+                            } catch (Exception e) {
+                                if (Util.SDK_INT <= 23 && !decoderInfos.isEmpty()) {
+                                    Log.e(TAG, "Skipping codec " + codecName + " (failed to query capabilities)");
+                                } else {
+                                    Log.e(TAG, "Failed to query codec " + codecName + " (" + supportedType + ")");
+                                    throw e;
+                                }
                             }
                         }
                     }
